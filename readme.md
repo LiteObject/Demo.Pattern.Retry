@@ -43,8 +43,23 @@ RetryPolicy<HttpResponseMessage> policy =
 		})
 ```
 ## Wait and Retry
-The Wait and Retry policy lets you pause before retrying, a great feature for scenarios where all you need is a little time for the problem to resolve. 
+The Wait and Retry policy lets you pause before retrying, a feature for scenarios where all you need is a little time for the problem to resolve. 
+
+Just like the Retry, the Wait and Retry policy can handle exceptions and bad results in called code. It also takes one extra parameter: the delay to add before each retry.
+
+```
+RetryPolicy<HttpResponseMessage> policy = Policy
+    .HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode)
+    .Or<HttpRequestException>()
+	.WaitAndRetryAsync (3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)/2)); 
+ 
+HttpResponseMessage httpResponseMessage = await 
+policy.ExecuteAsync(() => httpClient.GetAsync(remoteEndpoint));
+```
+
 ## Circuit Breaker
+>The purpose of the Circuit Breaker pattern is different than the Retry pattern. The Retry pattern enables an application to retry an operation in the expectation that it'll succeed. The Circuit Breaker pattern prevents an application from performing an operation that is likely to fail. An application can combine these two patterns by using the Retry pattern to invoke an operation through a circuit breaker.
+
 Polly offers two implementations of the circuit breaker: the Basic Circuit Breaker, which breaks when a defined number of consecutive faults occur, and the Advanced Circuit Breaker, which breaks when a threshold of faults occur within a time period, during which a high enough volume of requests were made.
 
 Basic Circuit Breaker example: _The circuit breaks if there are two consecutive failures in a 60-second window._
@@ -69,7 +84,22 @@ HttpResponseMessage response =
 	 await advancedCircuitBreakerPolicy.ExecuteAsync(
 	  () => _httpClient.GetAsync(remoteEndpoint));
 ```
+### Circuit states
+There are three main circuit states: Closed, Open, and Half-Open. These can be summarized in the following
 
+- Closed: The circuit is allowing requests through.
+- Open: The circuit tripped and isn’t allowing requests through right now.
+- HalfOpen: The next request that comes through will be used to test the service, while all other requests will be rejected.
+- There’s another state called “Isolated”. It’s only used when you manually trip the circuit.
+
+### Log circuit state changes:
+```
+var circuitBreakerPolicy = Policy.Handle<TransientException>()
+	.CircuitBreaker(exceptionsAllowedBeforeBreaking: 3, durationOfBreak: TimeSpan.FromSeconds(10),
+		onBreak: (_, duration) => Log($"Circuit open for duration {duration}"),
+		onReset: () => Log("Circuit closed and is allowing requests through"),
+		onHalfOpen: () => Log("Circuit is half-opened and will test the service with the next request"));
+```
 ## Fallbacks
 Sometimes a request is going to fail no matter how many times you retry. The Fallback policy lets you return some default or perform an action like sending alerts an admin, scaling a system or restarting a service. Fallbacks are generally used in combination with other policies like Retry or Wait and Retry inside a wrap.
 
@@ -97,7 +127,7 @@ wrapPolicy.Execute(() => SomeMethod());
 ```
 
 ## Bulkhead Isolation
-Bulkhead Isolation policy lets you control how your application consumes memory, CPU, threads, sockets, et cetera. Even if one part of your application can’t respond, the policy prevents this from bringing down the whole application.
+Bulkhead Isolation policy lets you control how your application consumes memory, CPU, threads, sockets, etc. Even if one part of your application can’t respond, the policy prevents this from bringing down the whole application.
 
 ```
 // Bulkhead Isolation policy with three execution slots and six queue slots
@@ -116,24 +146,6 @@ CachePolicy<int> cachePolicy =	Policy.Cache<int>(memoryCacheProvider, TimeSpan.F
 var result = cachePolicy.Execute(context => QueryRemoteService(id), new Context($"QRS-{id}"));
 ```
 ---
-
-## What is Circuit breaker?
->Circuit breaker is similar to the retry pattern. The difference is the circuit breaker pattern applies to all requests while retries apply to individual requests.
-
-## Circuit states
-There are three main circuit states: Closed, Open, and Half-Open. These can be summarized in the following
-
-- Closed: The circuit is allowing requests through.
-- Open: The circuit tripped and isn’t allowing requests through right now.
-- HalfOpen: The next request that comes through will be used to test the service, while all other requests will be rejected.
-- There’s another state called “Isolated”. It’s only used when you manually trip the circuit.
-
-### Log circuit state changes:
-`var circuitBreakerPolicy = Policy.Handle<TransientException>()
-	.CircuitBreaker(exceptionsAllowedBeforeBreaking: 3, durationOfBreak: TimeSpan.FromSeconds(10),
-		onBreak: (_, duration) => Log($"Circuit open for duration {duration}"),
-		onReset: () => Log("Circuit closed and is allowing requests through"),
-		onHalfOpen: () => Log("Circuit is half-opened and will test the service with the next request"));`
 
 ## Links to external resources:
 - https://docs.microsoft.com/en-us/azure/architecture/patterns/retry
