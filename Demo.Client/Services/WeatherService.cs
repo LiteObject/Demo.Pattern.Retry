@@ -8,22 +8,19 @@ namespace Demo.Client.Services
     {
         private const int MAX_RETRIES = 3;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly AsyncRetryPolicy<HttpResponseMessage>? retryPolicy;
+        private readonly AsyncRetryPolicy retryPolicy;
 
         public WeatherService(IHttpClientFactory httpClientFactory, IRetryDelayCalculator retryDelayCalculator)
         {
             _httpClientFactory = httpClientFactory;
-            retryPolicy = Policy.HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode)
-                    .RetryAsync(
-                    retryCount: MAX_RETRIES,
-                    onRetry: (response, retryCount) =>
-                    {
-                        Utility.LogInfo($">>> Http Response: {response.Result.StatusCode}");
 
-                        if (response.Result.StatusCode == HttpStatusCode.GatewayTimeout)
-                        {
-                            //....
-                        }
+            retryPolicy = Policy.Handle<HttpRequestException>(ex => ex.StatusCode == HttpStatusCode.TooManyRequests)
+                    .WaitAndRetryAsync(
+                    retryCount: MAX_RETRIES,
+                    sleepDurationProvider: retryDelayCalculator.Calculate,
+                    onRetry: (exception, sleepDuration, attemptNumber, context) =>
+                    {                        
+                        Utility.LogWarning($">>> Too many requests. Retrying in {sleepDuration}. {attemptNumber} / {MAX_RETRIES}");
                     });
         }
 
@@ -31,10 +28,11 @@ namespace Demo.Client.Services
         {
             var httpClient = _httpClientFactory.CreateClient("UserService");
 
-            await retryPolicy.ExecuteAsync(async () => 
+            return await retryPolicy.ExecuteAsync(async () => 
             {
-                var response = await httpClient.GetAsync($"/WeatherForecast");
-                var forecast = await response.Content.ReadAsStringAsync();
+                var response = await httpClient.GetAsync("/WeatherForecast");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
             });
         }
     }

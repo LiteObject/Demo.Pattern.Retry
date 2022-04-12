@@ -34,6 +34,7 @@ namespace Demo.Client
                 jitter = random.Next(10, 200);
             }
 
+            // Calculation: (1 second * 2^attemptCount-1) + random jitter between 10-200ms.
             return TimeSpan.FromSeconds(Math.Pow(2, attemptNumber - 1)) + TimeSpan.FromMilliseconds(jitter);
         }
     }

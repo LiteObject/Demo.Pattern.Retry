@@ -39,6 +39,13 @@ retryPolicy.Execute(() =>
 });
 
 /************************************************************************
+ * API CALL EXAMPLE with WaitAndRetryAsync & Exponential backoff with jitter
+ ************************************************************************/
+var weatherService = Provider.GetRequiredService<IWeatherService>();
+var forecast = weatherService.GetForecast();
+Console.WriteLine($"Weather forrecast: {forecast}");
+
+/************************************************************************
  * API CALL EXAMPLE
  ************************************************************************/
 var userService = Provider.GetRequiredService<IUserService>();
