@@ -26,4 +26,26 @@ public static class Utility
         // Additional exception checking logic goes here.
         return false;
     }
+
+    public static void LogInfo(string message) 
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {message}");
+        Console.ResetColor();
+    }
+
+    public static void LogWarning(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {message}");
+        Console.ResetColor();
+    }
+
+    public static void LogError(Exception ex)
+    {
+        // Console.ForegroundColor = ConsoleColor.Red;
+        Console.Error.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {ex.Message}");
+        Console.Error.WriteLine(ex);
+        // Console.ResetColor();
+    }
 }
