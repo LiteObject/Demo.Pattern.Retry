@@ -35,24 +35,24 @@ var retryPolicy = Policy.Handle<TransientException>()
 retryPolicy.Execute(() =>
 {
     var ex = new WebException("An unexpected event closed the connection. Please retry.", WebExceptionStatus.ConnectionClosed);
-	throw new TransientException("Some transient exception occured", ex);
+	// throw new TransientException("Some transient exception occured", ex);
 });
 
 /************************************************************************
  * API CALL EXAMPLE with WaitAndRetryAsync & Exponential backoff with jitter
  ************************************************************************/
 var weatherService = Provider.GetRequiredService<IWeatherService>();
-var forecast = weatherService.GetForecast();
+var forecast = await weatherService.GetForecast();
 Console.WriteLine($"Weather forrecast: {forecast}");
 
 /************************************************************************
  * API CALL EXAMPLE
  ************************************************************************/
-var userService = Provider.GetRequiredService<IUserService>();
+/*var userService = Provider.GetRequiredService<IUserService>();
 var users = await userService.GetUsers(10);
-users.ForEach(u => Utility.LogInfo($"{u.Name.First} {u.Name.Last}"));
+users.ForEach(u => Utility.LogInfo($"{u.Name.First} {u.Name.Last}")); */
 
-Console.WriteLine("Completed. Press any key to exit.");
+Console.WriteLine("\n\nCompleted. Press any key to exit.");
 
 void ConfigureServices(IServiceCollection services)
 {    
@@ -71,7 +71,7 @@ void ConfigureServices(IServiceCollection services)
     });
 
     services.AddHttpClient("WeatherForecastService", httpClient => {
-        httpClient.BaseAddress = new Uri("https://localhost:7080/WeatherForecast");
+        httpClient.BaseAddress = new Uri("https://localhost:5003");
     });
 
     services.AddScoped<IUserService, UserService>();

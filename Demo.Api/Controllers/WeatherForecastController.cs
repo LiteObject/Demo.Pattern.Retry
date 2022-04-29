@@ -24,14 +24,22 @@ namespace Demo.Api.Controllers
         {
             var rnd = new Random();
 
+            if (rnd.Next() % 4 == 0)
+            {
+                // return StatusCode((int)HttpStatusCode.BadGateway);
+                return StatusCode(StatusCodes.Status401Unauthorized, "Unauthorized: Please try again later.");
+            }
+
             if (rnd.Next() % 3 == 0)
             {
-                return StatusCode((int)HttpStatusCode.TooManyRequests);
+                //return StatusCode((int)HttpStatusCode.TooManyRequests);
+                return StatusCode(StatusCodes.Status429TooManyRequests, "Too Many Requests: Please try again later.");
             }
 
             if (rnd.Next() % 2 == 0) 
             {
-                return StatusCode((int)HttpStatusCode.BadGateway);
+                // return StatusCode((int)HttpStatusCode.BadGateway);
+                return StatusCode(StatusCodes.Status502BadGateway, "Bad Gateway: Please try again later.");
             }
 
             return Ok(Summaries[rnd.Next(Summaries.Length)]);

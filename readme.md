@@ -148,4 +148,5 @@ var result = cachePolicy.Execute(context => QueryRemoteService(id), new Context(
 ---
 
 ## Links to external resources:
+- https://github.com/App-vNext/Polly
 - https://docs.microsoft.com/en-us/azure/architecture/patterns/retry
