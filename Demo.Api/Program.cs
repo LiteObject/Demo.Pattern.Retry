@@ -18,8 +18,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+// travel overseasapp.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+/*  In .NET 6 compiler generates the Program class behind the scenes as the internal class, 
+ *  thus making it inaccessible in our integration testing project. So to solve this, we can 
+ *  create a public partial Program class in the Program.cs file in the main project 
+ */
+public partial class Program { }

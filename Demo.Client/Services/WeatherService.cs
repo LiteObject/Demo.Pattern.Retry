@@ -1,15 +1,26 @@
 ﻿using Polly;
+using Polly.CircuitBreaker;
+using Polly.Fallback;
 using Polly.Retry;
+using Polly.Timeout;
+using Polly.Wrap;
 using System.Net;
 
 namespace Demo.Client.Services
 {
     public class WeatherService : IWeatherService
     {
-        private const int MAX_RETRIES = 3;
+        private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicies;
+                
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly AsyncRetryPolicy retryPolicy;
 
+        /* The reason for "static" is circuit breaker relies on a shared state, to track failures across requests. 
+         * This can also be accomplished by making the service instance as singleton.*/
+        private static AsyncCircuitBreakerPolicy _circuitBreakerPolicy =
+            Policy.Handle<HttpRequestException>(ex => 
+                ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.BadRequest)
+                    .CircuitBreakerAsync(1, TimeSpan.FromSeconds(1));
+        
         // Handle both exceptions and return values in one policy
         HttpStatusCode[] httpStatusCodesWorthRetrying = {
            HttpStatusCode.RequestTimeout, // 408
@@ -19,30 +30,32 @@ namespace Demo.Client.Services
            HttpStatusCode.GatewayTimeout // 504
         };
 
-        public WeatherService(IHttpClientFactory httpClientFactory, IRetryDelayCalculator retryDelayCalculator)
+        public WeatherService(IHttpClientFactory httpClientFactory, IAsyncPolicy<HttpResponseMessage> retryPolicies)
         {
             _httpClientFactory = httpClientFactory;
-
-            retryPolicy = Policy.Handle<HttpRequestException>(ex => ex.StatusCode == HttpStatusCode.TooManyRequests)
-                    .WaitAndRetryAsync(
-                    retryCount: MAX_RETRIES,
-                    sleepDurationProvider: retryDelayCalculator.Calculate,
-                    onRetry: (exception, sleepDuration, attemptNumber, context) =>
-                    {                        
-                        Utility.LogWarning($">>> Too many requests. Retrying in {sleepDuration}. {attemptNumber} / {MAX_RETRIES}");
-                    });
+            _retryPolicies = retryPolicies;
         }
 
         public async Task<string> GetForecast()
         {
-            var httpClient = _httpClientFactory.CreateClient("WeatherForecastService");
+            using var httpClient = _httpClientFactory.CreateClient("WeatherForecastService");
 
-            return await retryPolicy.ExecuteAsync(async () => 
+            /*return await retryPolicy.ExecuteAsync(async () => 
             {
                 var response = await httpClient.GetAsync("/WeatherForecast");
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
+            }); */
+
+            var response = await _retryPolicies.ExecuteAsync(async () =>
+            {
+                var response = await httpClient.GetAsync("/WeatherForecast");
+                response.EnsureSuccessStatusCode();
+                return response;
             });
+
+            var result = await response.Content.ReadAsStringAsync();
+            return result;
         }
     }
 }

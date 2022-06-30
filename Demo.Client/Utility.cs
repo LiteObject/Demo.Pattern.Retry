@@ -27,25 +27,23 @@ public static class Utility
         return false;
     }
 
-    public static void LogInfo(string message) 
+    public static void LogInfo(string message, ConsoleColor color = ConsoleColor.Cyan) 
     {
-        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.ForegroundColor = color;
         Console.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {message}");
         Console.ResetColor();
     }
 
-    public static void LogWarning(string message)
+    public static void LogWarning(string message, ConsoleColor color = ConsoleColor.Yellow)
     {
-        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.ForegroundColor = color;
         Console.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {message}");
         Console.ResetColor();
     }
 
     public static void LogError(Exception ex)
     {
-        // Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine($"{DateTime.Now:hh:mm:ss.ffff} {ex.Message}");
         Console.Error.WriteLine(ex);
-        // Console.ResetColor();
     }
 }

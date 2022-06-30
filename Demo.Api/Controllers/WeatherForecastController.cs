@@ -24,9 +24,14 @@ namespace Demo.Api.Controllers
         {
             var rnd = new Random();
 
+            if (rnd.Next() % 6 == 0) 
+            {
+                return StatusCode(StatusCodes.Status404NotFound, $"{nameof(StatusCodes.Status404NotFound)}: Unable to find records.");
+            }
+
             if (rnd.Next() % 4 == 0)
             {
-                // return StatusCode((int)HttpStatusCode.BadGateway);
+                // return StatusCode((int)HttpStatusCode.Unauthorized);
                 return StatusCode(StatusCodes.Status401Unauthorized, "Unauthorized: Please try again later.");
             }
 
