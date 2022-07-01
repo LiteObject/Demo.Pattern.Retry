@@ -1,4 +1,5 @@
-﻿using Polly;
+﻿using Microsoft.Extensions.Logging;
+using Polly;
 using Polly.CircuitBreaker;
 using Polly.Fallback;
 using Polly.Retry;
@@ -10,8 +11,10 @@ namespace Demo.Client.Services
 {
     public class WeatherService : IWeatherService
     {
-        private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicies;
-                
+        private readonly ILogger<WeatherService> _logger;
+
+        // private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicies;
+        private readonly IAsyncRetryPolicies _retryPolicies;
         private readonly IHttpClientFactory _httpClientFactory;
 
         /* The reason for "static" is circuit breaker relies on a shared state, to track failures across requests. 
@@ -30,10 +33,13 @@ namespace Demo.Client.Services
            HttpStatusCode.GatewayTimeout // 504
         };
 
-        public WeatherService(IHttpClientFactory httpClientFactory, IAsyncPolicy<HttpResponseMessage> retryPolicies)
+        public WeatherService(IHttpClientFactory httpClientFactory, IAsyncRetryPolicies retryPolicies, ILogger<WeatherService> logger)
         {
+            _logger = logger;
             _httpClientFactory = httpClientFactory;
             _retryPolicies = retryPolicies;
+
+            _logger.LogDebug($"Instantiated {nameof(WeatherService)} class.");
         }
 
         public async Task<string> GetForecast()
@@ -47,7 +53,7 @@ namespace Demo.Client.Services
                 return await response.Content.ReadAsStringAsync();
             }); */
 
-            var response = await _retryPolicies.ExecuteAsync(async () =>
+            var response = await _retryPolicies.Get().ExecuteAsync(async () =>
             {
                 var response = await httpClient.GetAsync("/WeatherForecast");
                 response.EnsureSuccessStatusCode();

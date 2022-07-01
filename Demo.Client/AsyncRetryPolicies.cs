@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Demo.Client
 {
-    internal class AsyncRetryPolicies: IAsyncRetryPolicies
+    public class AsyncRetryPolicies : IAsyncRetryPolicies
     {
         private readonly ILogger<AsyncRetryPolicies> _logger;
         private readonly IRetryDelayCalculator _retryDelayCalculator;
@@ -19,9 +19,11 @@ namespace Demo.Client
         {
             this._logger = logger;
             this._retryDelayCalculator = retryDelayCalculator ?? throw new ArgumentNullException(nameof(retryDelayCalculator));
+
+            _logger.LogDebug($"Instantiated {nameof(AsyncRetryPolicies)} class.");
         }
 
-        public IAsyncPolicy<HttpResponseMessage> Get() 
+        public IAsyncPolicy<HttpResponseMessage> Get()
         {
             var retryAttemptCount = 0;
 
@@ -62,7 +64,11 @@ namespace Demo.Client
              * policy, and the response will return through each in reverse order. 
              * request -> fallback -> request -> retry
              * fallback <- response <- retry <- response
+             * 
+             * PolicyWrap<TResult> genericPolicyWrap = Policy.Wrap<TResult>(fallback, cache, retry, breaker, bulkhead, timeout);
+             * 
              */
+                        
             return Policy.WrapAsync(fallbackPolicy, waitAndRetryPolicy, retryPolicy);
         }
 

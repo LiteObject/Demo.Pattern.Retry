@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Demo.Client
 {
-    internal interface IAsyncRetryPolicies
+    public interface IAsyncRetryPolicies
     {
         public IAsyncPolicy<HttpResponseMessage> Get();
     }
